@@ -1,0 +1,33 @@
+
+select
+        "return flag was " + l.l_returnflag,
+        sum (l.l_quantity),
+        sum (l.l_extendedprice),
+        sum (l.l_extendedprice*(1-l.l_discount)),
+        sum (l.l_extendedprice*(1-l.l_discount)*(1+l.l_tax)),
+        avg (l.l_quantity),
+        avg (l.l_extendedprice),
+        avg (l.l_discount),
+        sum (1)
+from
+        lineitem as l
+where
+        (l.l_shipdate < "1998-12-01") and
+        (l.l_shipdate > "1998-06-01")
+group by
+        l.l_returnflag;
+
+Chris' output:
+
+Cost was: 666802
+****** TABLE SCAN returning 666802 tuples.
+  ** Output table: tempTable1
+  ** Input table: lineitem
+  ** Predicates:
+    < ([l_l_shipdate], string[1998-12-01])
+    > ([l_l_shipdate], string[1998-06-01])
+
+All tables created:
+Table: name: tempTable1; file: tempTableLoc1; schema: [<l_l_quantity, int>, <l_l_extendedprice, double>, <l_l_discount, double>, <l_l_tax, double>, <l_l_returnflag, string>]
+Table: name: lineitem; file: ./lineitem.bin; schema: [<l_l_orderkey, int>, <l_l_partkey, int>, <l_l_suppkey, int>, <l_l_linenumber, int>, <l_l_quantity, int>, <l_l_extendedprice, double>, <l_l_discount, double>, <l_l_tax, double>, <l_l_returnflag, string>, <l_l_linestatus, string>, <l_l_shipdate, string>, <l_l_commitdate, string>, <l_l_receiptdate, string>, <l_l_shipinstruct, string>, <l_l_shipmode, string>, <l_l_comment, string>]
+

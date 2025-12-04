@@ -1,0 +1,51 @@
+
+select
+        ps.ps_partkey, 
+        avg (ps.ps_supplycost)
+from
+        part as p,
+        partsupp as ps,
+        supplier as s
+where
+        (p.p_partkey = ps.ps_partkey)
+        and (s.s_suppkey = ps.ps_suppkey)
+group by
+        ps.ps_partkey;
+
+Chris' output:
+
+Cost was: 2.61026e+06
+****** JOIN returning 800256 tuples.
+  ** Output table: tempTable4508
+  ** Predicates:
+    == ([p_p_partkey], [ps_ps_partkey])
+  ** Left tree:
+  ****** TABLE SCAN returning 200000 tuples.
+    ** Output table: tempTable4509
+    ** Input table: part
+    ** Predicates:
+  ** Right tree:
+  ****** JOIN returning 800000 tuples.
+    ** Output table: tempTable4510
+    ** Predicates:
+      == ([s_s_suppkey], [ps_ps_suppkey])
+    ** Left tree:
+    ****** TABLE SCAN returning 800000 tuples.
+      ** Output table: tempTable4511
+      ** Input table: partsupp
+      ** Predicates:
+    ** Right tree:
+    ****** TABLE SCAN returning 10000 tuples.
+      ** Output table: tempTable4512
+      ** Input table: supplier
+      ** Predicates:
+
+All tables created:
+Table: name: tempTable4509; file: tempTableLoc4509; schema: [<p_p_partkey, int>]
+Table: name: part; file: ./part.bin; schema: [<p_p_partkey, int>, <p_p_name, string>, <p_p_mfgr, string>, <p_p_brand, string>, <p_p_type, string>, <p_p_size, int>, <p_p_container, string>, <p_p_retailprice, double>, <p_p_comment, string>]
+Table: name: tempTable4511; file: tempTableLoc4511; schema: [<ps_ps_partkey, int>, <ps_ps_suppkey, int>, <ps_ps_supplycost, double>]
+Table: name: partsupp; file: ./partsupp.bin; schema: [<ps_ps_partkey, int>, <ps_ps_suppkey, int>, <ps_ps_availqty, int>, <ps_ps_supplycost, double>, <ps_ps_comment, string>]
+Table: name: tempTable4512; file: tempTableLoc4512; schema: [<s_s_suppkey, int>]
+Table: name: supplier; file: ./supplier.bin; schema: [<s_s_suppkey, int>, <s_s_name, string>, <s_s_address, string>, <s_s_nationkey, int>, <s_s_phone, string>, <s_s_acctbal, double>, <s_s_comment, string>]
+Table: name: tempTable4510; file: tempTableLoc4510; schema: [<ps_ps_partkey, int>, <ps_ps_supplycost, double>]
+Table: name: tempTable4508; file: tempTableLoc4508; schema: [<ps_ps_partkey, int>, <ps_ps_supplycost, double>]

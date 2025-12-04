@@ -1,0 +1,102 @@
+
+select
+        n.n_name,
+        o.o_orderdate,
+        l.l_extendedprice * (1 - l.l_discount) - ps.ps_supplycost * l.l_quantity 
+from
+        part as p,
+        supplier as s,
+        lineitem as l,
+        partsupp as ps,
+        orders as o,
+        nation as n
+where
+        (s.s_suppkey = l.l_suppkey)
+        and (ps.ps_suppkey = l.l_suppkey)
+        and (ps.ps_partkey = l.l_partkey)
+        and (p.p_partkey = l.l_partkey)
+        and (o.o_orderkey = l.l_orderkey)
+        and (s.s_nationkey = n.n_nationkey)
+        and (p.p_type = "STANDARD POLISHED TIN" or
+             p.p_type = "ECONOMY BRUSHED TIN" or
+             p.p_type = "ECONOMY POLISHED NICKEL" or
+             p.p_type = "SMALL ANODIZED COPPER");
+
+Chris' output:
+
+Cost was: 8.31738e+06
+****** JOIN returning 600.66 tuples.
+  ** Output table: tempTable4545
+  ** Predicates:
+    == ([s_s_nationkey], [n_n_nationkey])
+  ** Left tree:
+  ****** TABLE SCAN returning 25 tuples.
+    ** Output table: tempTable9048
+    ** Input table: nation
+    ** Predicates:
+  ** Right tree:
+  ****** JOIN returning 600.66 tuples.
+    ** Output table: tempTable9049
+    ** Predicates:
+      == ([p_p_partkey], [l_l_partkey])
+    ** Left tree:
+    ****** TABLE SCAN returning 1333.33 tuples.
+      ** Output table: tempTable9824
+      ** Input table: part
+      ** Predicates:
+        || (|| (|| (== ([p_p_type], string[STANDARD POLISHED TIN]), == ([p_p_type], string[ECONOMY BRUSHED TIN])), == ([p_p_type], string[ECONOMY POLISHED NICKEL])), == ([p_p_type], string[SMALL ANODIZED COPPER]))
+    ** Right tree:
+    ****** JOIN returning 600.66 tuples.
+      ** Output table: tempTable9825
+      ** Predicates:
+        == ([s_s_suppkey], [l_l_suppkey])
+      ** Left tree:
+      ****** JOIN returning 600.66 tuples.
+        ** Output table: tempTable9970
+        ** Predicates:
+          == ([o_o_orderkey], [l_l_orderkey])
+        ** Left tree:
+        ****** TABLE SCAN returning 1.5e+06 tuples.
+          ** Output table: tempTable9977
+          ** Input table: orders
+          ** Predicates:
+        ** Right tree:
+        ****** JOIN returning 2401.25 tuples.
+          ** Output table: tempTable9978
+          ** Predicates:
+            == ([ps_ps_suppkey], [l_l_suppkey])
+            == ([ps_ps_partkey], [l_l_partkey])
+          ** Left tree:
+          ****** TABLE SCAN returning 6.00122e+06 tuples.
+            ** Output table: tempTable9979
+            ** Input table: lineitem
+            ** Predicates:
+          ** Right tree:
+          ****** TABLE SCAN returning 800000 tuples.
+            ** Output table: tempTable9980
+            ** Input table: partsupp
+            ** Predicates:
+      ** Right tree:
+      ****** TABLE SCAN returning 10000 tuples.
+        ** Output table: tempTable10007
+        ** Input table: supplier
+        ** Predicates:
+
+All tables created:
+Table: name: tempTable9048; file: tempTableLoc9048; schema: [<n_n_nationkey, int>, <n_n_name, string>]
+Table: name: nation; file: ./nation.bin; schema: [<n_n_nationkey, int>, <n_n_name, string>, <n_n_regionkey, int>, <n_n_comment, string>]
+Table: name: tempTable9824; file: tempTableLoc9824; schema: [<p_p_partkey, int>]
+Table: name: part; file: ./part.bin; schema: [<p_p_partkey, int>, <p_p_name, string>, <p_p_mfgr, string>, <p_p_brand, string>, <p_p_type, string>, <p_p_size, int>, <p_p_container, string>, <p_p_retailprice, double>, <p_p_comment, string>]
+Table: name: tempTable9977; file: tempTableLoc9977; schema: [<o_o_orderkey, int>, <o_o_orderdate, string>]
+Table: name: orders; file: ./orders.bin; schema: [<o_o_orderkey, int>, <o_o_custkey, int>, <o_o_orderstatus, string>, <o_o_totalprice, double>, <o_o_orderdate, string>, <o_o_orderpriority, string>, <o_o_clerk, string>, <o_o_shippriority, int>, <o_o_comment, string>]
+Table: name: tempTable9979; file: tempTableLoc9979; schema: [<l_l_orderkey, int>, <l_l_partkey, int>, <l_l_suppkey, int>, <l_l_quantity, int>, <l_l_extendedprice, double>, <l_l_discount, double>]
+Table: name: lineitem; file: ./lineitem.bin; schema: [<l_l_orderkey, int>, <l_l_partkey, int>, <l_l_suppkey, int>, <l_l_linenumber, int>, <l_l_quantity, int>, <l_l_extendedprice, double>, <l_l_discount, double>, <l_l_tax, double>, <l_l_returnflag, string>, <l_l_linestatus, string>, <l_l_shipdate, string>, <l_l_commitdate, string>, <l_l_receiptdate, string>, <l_l_shipinstruct, string>, <l_l_shipmode, string>, <l_l_comment, string>]
+Table: name: tempTable9980; file: tempTableLoc9980; schema: [<ps_ps_partkey, int>, <ps_ps_suppkey, int>, <ps_ps_supplycost, double>]
+Table: name: partsupp; file: ./partsupp.bin; schema: [<ps_ps_partkey, int>, <ps_ps_suppkey, int>, <ps_ps_availqty, int>, <ps_ps_supplycost, double>, <ps_ps_comment, string>]
+Table: name: tempTable9978; file: tempTableLoc9978; schema: [<l_l_orderkey, int>, <l_l_partkey, int>, <l_l_suppkey, int>, <l_l_quantity, int>, <l_l_extendedprice, double>, <l_l_discount, double>, <ps_ps_supplycost, double>]
+Table: name: tempTable9970; file: tempTableLoc9970; schema: [<l_l_partkey, int>, <l_l_suppkey, int>, <l_l_quantity, int>, <l_l_extendedprice, double>, <l_l_discount, double>, <o_o_orderdate, string>, <ps_ps_supplycost, double>]
+Table: name: tempTable10007; file: tempTableLoc10007; schema: [<s_s_suppkey, int>, <s_s_nationkey, int>]
+Table: name: supplier; file: ./supplier.bin; schema: [<s_s_suppkey, int>, <s_s_name, string>, <s_s_address, string>, <s_s_nationkey, int>, <s_s_phone, string>, <s_s_acctbal, double>, <s_s_comment, string>]
+Table: name: tempTable9825; file: tempTableLoc9825; schema: [<l_l_partkey, int>, <l_l_quantity, int>, <l_l_extendedprice, double>, <l_l_discount, double>, <o_o_orderdate, string>, <ps_ps_supplycost, double>, <s_s_nationkey, int>]
+Table: name: tempTable9049; file: tempTableLoc9049; schema: [<l_l_quantity, int>, <l_l_extendedprice, double>, <l_l_discount, double>, <o_o_orderdate, string>, <ps_ps_supplycost, double>, <s_s_nationkey, int>]
+Table: name: tempTable4545; file: tempTableLoc4545; schema: [<l_l_quantity, int>, <l_l_extendedprice, double>, <l_l_discount, double>, <n_n_name, string>, <o_o_orderdate, string>, <ps_ps_supplycost, double>]

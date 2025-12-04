@@ -1,0 +1,112 @@
+
+select
+        "both customers purchased part " + p.p_name
+from
+        part as p,
+        orders as o1,
+        orders as o2,
+        lineitem as l1,
+        lineitem as l2,
+        customer as c1,
+        customer as c2
+where
+        (l1.l_partkey = l2.l_partkey)
+        and (o1.o_orderkey = l1.l_orderkey)
+        and (o2.o_orderkey = l2.l_orderkey)
+        and (o1.o_custkey = c1.c_custkey)
+        and (o2.o_custkey = c2.c_custkey)
+        and (c1.c_name = "Customer#000129200")
+        and (c2.c_name = "Customer#000108388")
+        and (p.p_partkey = l2.l_partkey);
+
+Chris' output:
+
+Cost was: 1.52025e+07
+****** JOIN returning 14.8424 tuples.
+  ** Output table: tempTable71150
+  ** Predicates:
+    == ([p_p_partkey], [l2_l_partkey])
+  ** Left tree:
+  ****** JOIN returning 14.8376 tuples.
+    ** Output table: tempTable579483
+    ** Predicates:
+      == ([l1_l_partkey], [l2_l_partkey])
+    ** Left tree:
+    ****** JOIN returning 14.8376 tuples.
+      ** Output table: tempTable606064
+      ** Predicates:
+        == ([o1_o_orderkey], [l1_l_orderkey])
+      ** Left tree:
+      ****** TABLE SCAN returning 6.00122e+06 tuples.
+        ** Output table: tempTable606071
+        ** Input table: lineitem
+        ** Predicates:
+      ** Right tree:
+      ****** JOIN returning 14.8261 tuples.
+        ** Output table: tempTable606072
+        ** Predicates:
+          == ([o1_o_custkey], [c1_c_custkey])
+        ** Left tree:
+        ****** TABLE SCAN returning 0.98809 tuples.
+          ** Output table: tempTable606073
+          ** Input table: customer
+          ** Predicates:
+            == ([c1_c_name], string[Customer#000129200])
+        ** Right tree:
+        ****** TABLE SCAN returning 1.5e+06 tuples.
+          ** Output table: tempTable606074
+          ** Input table: orders
+          ** Predicates:
+    ** Right tree:
+    ****** JOIN returning 14.8376 tuples.
+      ** Output table: tempTable606101
+      ** Predicates:
+        == ([o2_o_orderkey], [l2_l_orderkey])
+      ** Left tree:
+      ****** TABLE SCAN returning 6.00122e+06 tuples.
+        ** Output table: tempTable606108
+        ** Input table: lineitem
+        ** Predicates:
+      ** Right tree:
+      ****** JOIN returning 14.8261 tuples.
+        ** Output table: tempTable606109
+        ** Predicates:
+          == ([o2_o_custkey], [c2_c_custkey])
+        ** Left tree:
+        ****** TABLE SCAN returning 0.98809 tuples.
+          ** Output table: tempTable606110
+          ** Input table: customer
+          ** Predicates:
+            == ([c2_c_name], string[Customer#000108388])
+        ** Right tree:
+        ****** TABLE SCAN returning 1.5e+06 tuples.
+          ** Output table: tempTable606111
+          ** Input table: orders
+          ** Predicates:
+  ** Right tree:
+  ****** TABLE SCAN returning 200000 tuples.
+    ** Output table: tempTable646088
+    ** Input table: part
+    ** Predicates:
+
+All tables created:
+Table: name: tempTable606071; file: tempTableLoc606071; schema: [<l1_l_orderkey, int>, <l1_l_partkey, int>]
+Table: name: lineitem; file: ./lineitem.bin; schema: [<l1_l_orderkey, int>, <l1_l_partkey, int>, <l1_l_suppkey, int>, <l1_l_linenumber, int>, <l1_l_quantity, int>, <l1_l_extendedprice, double>, <l1_l_discount, double>, <l1_l_tax, double>, <l1_l_returnflag, string>, <l1_l_linestatus, string>, <l1_l_shipdate, string>, <l1_l_commitdate, string>, <l1_l_receiptdate, string>, <l1_l_shipinstruct, string>, <l1_l_shipmode, string>, <l1_l_comment, string>]
+Table: name: tempTable606073; file: tempTableLoc606073; schema: [<c1_c_custkey, int>]
+Table: name: customer; file: ./customer.bin; schema: [<c1_c_custkey, int>, <c1_c_name, string>, <c1_c_address, string>, <c1_c_nationkey, int>, <c1_c_phone, string>, <c1_c_acctbal, double>, <c1_c_mktsegment, string>, <c1_c_comment, string>]
+Table: name: tempTable606074; file: tempTableLoc606074; schema: [<o1_o_orderkey, int>, <o1_o_custkey, int>]
+Table: name: orders; file: ./orders.bin; schema: [<o1_o_orderkey, int>, <o1_o_custkey, int>, <o1_o_orderstatus, string>, <o1_o_totalprice, double>, <o1_o_orderdate, string>, <o1_o_orderpriority, string>, <o1_o_clerk, string>, <o1_o_shippriority, int>, <o1_o_comment, string>]
+Table: name: tempTable606072; file: tempTableLoc606072; schema: [<o1_o_orderkey, int>]
+Table: name: tempTable606064; file: tempTableLoc606064; schema: [<l1_l_partkey, int>]
+Table: name: tempTable606108; file: tempTableLoc606108; schema: [<l2_l_orderkey, int>, <l2_l_partkey, int>]
+Table: name: lineitem; file: ./lineitem.bin; schema: [<l2_l_orderkey, int>, <l2_l_partkey, int>, <l2_l_suppkey, int>, <l2_l_linenumber, int>, <l2_l_quantity, int>, <l2_l_extendedprice, double>, <l2_l_discount, double>, <l2_l_tax, double>, <l2_l_returnflag, string>, <l2_l_linestatus, string>, <l2_l_shipdate, string>, <l2_l_commitdate, string>, <l2_l_receiptdate, string>, <l2_l_shipinstruct, string>, <l2_l_shipmode, string>, <l2_l_comment, string>]
+Table: name: tempTable606110; file: tempTableLoc606110; schema: [<c2_c_custkey, int>]
+Table: name: customer; file: ./customer.bin; schema: [<c2_c_custkey, int>, <c2_c_name, string>, <c2_c_address, string>, <c2_c_nationkey, int>, <c2_c_phone, string>, <c2_c_acctbal, double>, <c2_c_mktsegment, string>, <c2_c_comment, string>]
+Table: name: tempTable606111; file: tempTableLoc606111; schema: [<o2_o_orderkey, int>, <o2_o_custkey, int>]
+Table: name: orders; file: ./orders.bin; schema: [<o2_o_orderkey, int>, <o2_o_custkey, int>, <o2_o_orderstatus, string>, <o2_o_totalprice, double>, <o2_o_orderdate, string>, <o2_o_orderpriority, string>, <o2_o_clerk, string>, <o2_o_shippriority, int>, <o2_o_comment, string>]
+Table: name: tempTable606109; file: tempTableLoc606109; schema: [<o2_o_orderkey, int>]
+Table: name: tempTable606101; file: tempTableLoc606101; schema: [<l2_l_partkey, int>]
+Table: name: tempTable579483; file: tempTableLoc579483; schema: [<l2_l_partkey, int>]
+Table: name: tempTable646088; file: tempTableLoc646088; schema: [<p_p_partkey, int>, <p_p_name, string>]
+Table: name: part; file: ./part.bin; schema: [<p_p_partkey, int>, <p_p_name, string>, <p_p_mfgr, string>, <p_p_brand, string>, <p_p_type, string>, <p_p_size, int>, <p_p_container, string>, <p_p_retailprice, double>, <p_p_comment, string>]
+Table: name: tempTable71150; file: tempTableLoc71150; schema: [<p_p_name, string>]

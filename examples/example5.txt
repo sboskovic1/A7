@@ -1,0 +1,82 @@
+select
+        ps.ps_partkey, 
+        avg (ps.ps_supplycost)
+from
+        part as p,
+        partsupp as ps,
+        supplier as s,
+        nation as n,
+        region as r
+where
+        (p.p_partkey = ps.ps_partkey)
+        and (s.s_suppkey = ps.ps_suppkey)
+        and (s.s_nationkey = n.n_nationkey)
+        and (n.n_regionkey = r.r_regionkey)
+        and (r.r_name = "AMERICA")
+group by
+        ps.ps_partkey;
+
+Chris' output:
+
+Cost was: 1.33208e+06
+****** JOIN returning 160051 tuples.
+  ** Output table: tempTable7
+  ** Predicates:
+    == ([p_p_partkey], [ps_ps_partkey])
+  ** Left tree:
+  ****** TABLE SCAN returning 200000 tuples.
+    ** Output table: tempTable374
+    ** Input table: part
+    ** Predicates:
+  ** Right tree:
+  ****** JOIN returning 160000 tuples.
+    ** Output table: tempTable375
+    ** Predicates:
+      == ([s_s_suppkey], [ps_ps_suppkey])
+    ** Left tree:
+    ****** TABLE SCAN returning 800000 tuples.
+      ** Output table: tempTable414
+      ** Input table: partsupp
+      ** Predicates:
+    ** Right tree:
+    ****** JOIN returning 2000 tuples.
+      ** Output table: tempTable415
+      ** Predicates:
+        == ([s_s_nationkey], [n_n_nationkey])
+      ** Left tree:
+      ****** JOIN returning 5 tuples.
+        ** Output table: tempTable428
+        ** Predicates:
+          == ([n_n_regionkey], [r_r_regionkey])
+        ** Left tree:
+        ****** TABLE SCAN returning 25 tuples.
+          ** Output table: tempTable429
+          ** Input table: nation
+          ** Predicates:
+        ** Right tree:
+        ****** TABLE SCAN returning 1 tuples.
+          ** Output table: tempTable430
+          ** Input table: region
+          ** Predicates:
+            == ([r_r_name], string[AMERICA])
+      ** Right tree:
+      ****** TABLE SCAN returning 10000 tuples.
+        ** Output table: tempTable433
+        ** Input table: supplier
+        ** Predicates:
+
+All tables created:
+Table: name: tempTable374; file: tempTableLoc374; schema: [<p_p_partkey, int>]
+Table: name: part; file: ./part.bin; schema: [<p_p_partkey, int>, <p_p_name, string>, <p_p_mfgr, string>, <p_p_brand, string>, <p_p_type, string>, <p_p_size, int>, <p_p_container, string>, <p_p_retailprice, double>, <p_p_comment, string>]
+Table: name: tempTable414; file: tempTableLoc414; schema: [<ps_ps_partkey, int>, <ps_ps_suppkey, int>, <ps_ps_supplycost, double>]
+Table: name: partsupp; file: ./partsupp.bin; schema: [<ps_ps_partkey, int>, <ps_ps_suppkey, int>, <ps_ps_availqty, int>, <ps_ps_supplycost, double>, <ps_ps_comment, string>]
+Table: name: tempTable429; file: tempTableLoc429; schema: [<n_n_nationkey, int>, <n_n_regionkey, int>]
+Table: name: nation; file: ./nation.bin; schema: [<n_n_nationkey, int>, <n_n_name, string>, <n_n_regionkey, int>, <n_n_comment, string>]
+Table: name: tempTable430; file: tempTableLoc430; schema: [<r_r_regionkey, int>]
+Table: name: region; file: ./region.bin; schema: [<r_r_regionkey, int>, <r_r_name, string>, <r_r_comment, string>]
+Table: name: tempTable428; file: tempTableLoc428; schema: [<n_n_nationkey, int>]
+Table: name: tempTable433; file: tempTableLoc433; schema: [<s_s_suppkey, int>, <s_s_nationkey, int>]
+Table: name: supplier; file: ./supplier.bin; schema: [<s_s_suppkey, int>, <s_s_name, string>, <s_s_address, string>, <s_s_nationkey, int>, <s_s_phone, string>, <s_s_acctbal, double>, <s_s_comment, string>]
+Table: name: tempTable415; file: tempTableLoc415; schema: [<s_s_suppkey, int>]
+Table: name: tempTable375; file: tempTableLoc375; schema: [<ps_ps_partkey, int>, <ps_ps_supplycost, double>]
+Table: name: tempTable7; file: tempTableLoc7; schema: [<ps_ps_partkey, int>, <ps_ps_supplycost, double>]

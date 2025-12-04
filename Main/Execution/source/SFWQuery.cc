@@ -16,8 +16,8 @@ pair <LogicalOpPtr, double> SFWQuery :: optimizeQueryPlan (map <string, MyDB_Tab
 	MyDB_SchemaPtr totSchema, vector <ExprTreePtr> &allDisjunctions) {
 
 	LogicalOpPtr res = nullptr;
-	cost = 9e99;
-
+	double cost = 9e99;
+	double best = cost;
 	// some code here...
 
 	// case where no joins

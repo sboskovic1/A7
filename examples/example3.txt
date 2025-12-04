@@ -1,0 +1,47 @@
+select
+        l.l_shipmode,
+        sum (1)
+from
+        orders as o,
+        lineitem as l
+where
+        (o.o_orderkey = l.l_orderkey)
+        and (o.o_orderstatus = "F")
+        and (l.l_shipmode = "TRUCK" or l.l_shipmode = "RAIL")
+        and (l.l_commitdate < l.l_receiptdate)
+        and (l.l_shipdate < l.l_commitdate)
+        and (l.l_receiptdate > "1996-06-20" or l.l_receiptdate = "1996-06-20")
+        and (l.l_receiptdate < "1997-06-20" or l.l_receiptdate = "1997-06-20")
+group by
+        l.l_shipmode;
+
+Chris' output:
+
+Cost was: 500073
+****** JOIN returning 36.5251 tuples.
+  ** Output table: tempTable2
+  ** Predicates:
+    == ([o_o_orderkey], [l_l_orderkey])
+  ** Left tree:
+  ****** TABLE SCAN returning 36.5251 tuples.
+    ** Output table: tempTable3
+    ** Input table: lineitem
+    ** Predicates:
+      || (== ([l_l_shipmode], string[TRUCK]), == ([l_l_shipmode], string[RAIL]))
+      < ([l_l_commitdate], [l_l_receiptdate])
+      < ([l_l_shipdate], [l_l_commitdate])
+      || (> ([l_l_receiptdate], string[1996-06-20]), == ([l_l_receiptdate], string[1996-06-20]))
+      || (< ([l_l_receiptdate], string[1997-06-20]), == ([l_l_receiptdate], string[1997-06-20]))
+  ** Right tree:
+  ****** TABLE SCAN returning 500000 tuples.
+    ** Output table: tempTable4
+    ** Input table: orders
+    ** Predicates:
+      == ([o_o_orderstatus], string[F])
+
+All tables created:
+Table: name: tempTable3; file: tempTableLoc3; schema: [<l_l_orderkey, int>, <l_l_shipmode, string>]
+Table: name: lineitem; file: ./lineitem.bin; schema: [<l_l_orderkey, int>, <l_l_partkey, int>, <l_l_suppkey, int>, <l_l_linenumber, int>, <l_l_quantity, int>, <l_l_extendedprice, double>, <l_l_discount, double>, <l_l_tax, double>, <l_l_returnflag, string>, <l_l_linestatus, string>, <l_l_shipdate, string>, <l_l_commitdate, string>, <l_l_receiptdate, string>, <l_l_shipinstruct, string>, <l_l_shipmode, string>, <l_l_comment, string>]
+Table: name: tempTable4; file: tempTableLoc4; schema: [<o_o_orderkey, int>]
+Table: name: orders; file: ./orders.bin; schema: [<o_o_orderkey, int>, <o_o_custkey, int>, <o_o_orderstatus, string>, <o_o_totalprice, double>, <o_o_orderdate, string>, <o_o_orderpriority, string>, <o_o_clerk, string>, <o_o_shippriority, int>, <o_o_comment, string>]
+Table: name: tempTable2; file: tempTableLoc2; schema: [<l_l_shipmode, string>]
