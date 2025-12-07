@@ -55,8 +55,12 @@ pair <LogicalOpPtr, double> SFWQuery :: optimizeQueryPlan (map <string, MyDB_Tab
 
 		auto it = allTables.begin();
 		string tableName = it->first;
+		cout << "tableName: " << tableName << endl;
+
 		MyDB_TablePtr table = it->second;
 		MyDB_TablePtr aliasTable = table->alias(tableAliasMap[tableName]);
+
+		cout << "Table alias " << tableAliasMap[tableName] << endl;
 
 		MyDB_TablePtr outTable = make_shared <MyDB_Table> ("tempTable" + to_string(name), "tempTableLoc" + to_string(name), totSchema);
 		name++;
@@ -65,7 +69,9 @@ pair <LogicalOpPtr, double> SFWQuery :: optimizeQueryPlan (map <string, MyDB_Tab
 		
 		LogicalOpPtr myExp = make_shared <LogicalTableScan> (aliasTable, outTable, scanStats, allDisjunctions);
 		res = myExp;
-		best = scanStats->getTupleCount();
+		double tupleCount = scanStats->getTupleCount();
+		cout << "tupleCount: " << tupleCount << endl;
+		best = tupleCount;
 		
 		cout << "Best returned from base case: " << best << endl;
 		return make_pair (res, best);
