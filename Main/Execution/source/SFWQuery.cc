@@ -17,7 +17,7 @@ pair <LogicalOpPtr, double> SFWQuery :: optimizeQueryPlan (map <string, MyDB_Tab
 
 	LogicalOpPtr res = nullptr;
 	double cost = 9e99;
-	double best = std::numeric_limits<double>::infinity();
+	double best = 9e99;
 
 	// case where no joins
 	if (allTables.size () == 1) {
@@ -28,15 +28,14 @@ pair <LogicalOpPtr, double> SFWQuery :: optimizeQueryPlan (map <string, MyDB_Tab
 
 	// we have at least one join
 	vector<pair<string, MyDB_TablePtr>> tableList;
-	vector<pair <string, string>> tableAliases;
 	tableList.reserve(allTables.size());
-	tableAliases.reserve(allTables.size());
+	map <string, string> tableAliasMap;
 
 	for (pair <string, string> tableAlias : tablesToProcess) {
 		auto entry = allTables.find(tableAlias.first);
 		if (entry != allTables.end()) {
 			tableList.push_back(*entry);
-			tableAliases.push_back(tableAlias);
+			tableAliasMap[tableAlias.first] = tableAlias.second;
 		}
 	}
 
@@ -46,18 +45,14 @@ pair <LogicalOpPtr, double> SFWQuery :: optimizeQueryPlan (map <string, MyDB_Tab
 
 		map<string, MyDB_TablePtr> leftTables;
     	map<string, MyDB_TablePtr> rightTables;
-		vector<pair <string, string>> leftAliases;
-		vector<pair <string, string>> rightAliases;
 
 		for (int i = 0; i < n; ++i) {
 			if (mask & (1 << i)) {
 				// 1 goes to RIGHT group
 				rightTables[tableList[i].first] = tableList[i].second;
-				rightAliases.push_back(tableAliases[i]);
 			} else {
 				// 0 goes to LEFT group
 				leftTables[tableList[i].first] = tableList[i].second;
-				leftAliases.push_back(tableAliases[i]);
 			}
 		}
 
@@ -69,16 +64,18 @@ pair <LogicalOpPtr, double> SFWQuery :: optimizeQueryPlan (map <string, MyDB_Tab
 		// loop through all of the disjunctions and break them apart
 		for (auto a: allDisjunctions) {
 			bool inLeft = false;
-			for (pair<string, string> leftAlias : leftAliases) {
-				if (a->referencesTable(leftAlias.second)) {
+			for (pair<string, MyDB_TablePtr> leftTable : leftTables) {
+				string alias = tableAliasMap[leftTable.first];
+				if (a->referencesTable(alias)) {
 					inLeft = true;
 					break;
 				}
 			}
 
 			bool inRight= false;
-			for (pair<string, string> rightAlias : rightAliases) {
-				if (a->referencesTable(rightAlias.second)) {
+			for (pair<string, MyDB_TablePtr> rightTable : rightTables) {
+				string alias = tableAliasMap[rightTable.first];
+				if (a->referencesTable(alias)) {
 					inRight= true;
 					break;
 				}
@@ -96,8 +93,84 @@ pair <LogicalOpPtr, double> SFWQuery :: optimizeQueryPlan (map <string, MyDB_Tab
 			}
 		}
 
-		
+		MyDB_SchemaPtr leftSchema = make_shared <MyDB_Schema> ();
+		MyDB_SchemaPtr rightSchema = make_shared <MyDB_Schema> ();
+		// Not sure if we need combSchema
+		// MyDB_SchemaPtr combSchema = make_shared <MyDB_Schema> ();
 
+		for (pair <string, MyDB_TablePtr> leftTable : leftTables) {
+			string alias = tableAliasMap[leftTable.first];
+			for (auto b: leftTable.second->getSchema ()->getAtts ()) {
+				bool needIt = false;
+				for (auto a: valuesToSelect) {
+					if (a->referencesAtt (alias, b.first)) {
+						needIt = true;
+						break;
+					}
+				}
+
+				if (!needIt) {
+					for (auto a: topCNF) {
+						if (a->referencesAtt (alias, b.first)) {
+							needIt = true;
+							break;
+						}
+					}
+				}
+
+				if (needIt) {
+					leftSchema->getAtts ().push_back (make_pair (alias + "_" + b.first, b.second));
+					// combSchema->getAtts ().push_back (make_pair (alias+ "_" + b.first, b.second));
+				}
+			}
+		}
+
+		cout << "left schema: " << leftSchema << "\n";
+
+		for (pair <string, MyDB_TablePtr> rightTable : rightTables) {
+			string alias = tableAliasMap[rightTable.first];
+			for (auto b: rightTable.second->getSchema ()->getAtts ()) {
+				bool needIt = false;
+				for (auto a: valuesToSelect) {
+					if (a->referencesAtt (alias, b.first)) {
+						needIt = true;
+						break;
+					}
+				}
+
+				if (!needIt) {
+					for (auto a: topCNF) {
+						if (a->referencesAtt (alias, b.first)) {
+							needIt = true;
+							break;
+						}
+					}
+				}
+
+				if (needIt) {
+					rightSchema->getAtts ().push_back (make_pair (alias + "_" + b.first, b.second));
+					// combSchema->getAtts ().push_back (make_pair (alias+ "_" + b.first, b.second));
+				}
+			}
+		}
+
+		cout << "right schema: " << leftSchema << "\n";
+
+		pair<LogicalOpPtr, double> leftPlan = optimizeQueryPlan (leftTables, leftSchema, leftCNF);
+		pair<LogicalOpPtr, double> rightPlan = optimizeQueryPlan (rightTables, rightSchema, rightCNF);
+
+		// Not sure what to name the output table
+		MyDB_TablePtr outTable = make_shared <MyDB_Table> ("tempTable", "tempTableLoc", totSchema);
+		// Not sure if this is the stats to get
+		MyDB_StatsPtr finalStats = leftPlan.first->getStats ()->costJoin (topCNF, rightPlan.first->getStats ());
+		LogicalOpPtr myExp = make_shared <LogicalJoin> (leftPlan.first, rightPlan.first, outTable, topCNF, finalStats);
+
+		cost = leftPlan.second + rightPlan.second + finalStats->getTupleCount ();
+
+		if (cost < best) {
+			best = cost;
+			res = myExp;
+		}
 	}
 
 	return make_pair (res, best);
