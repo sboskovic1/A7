@@ -12,13 +12,12 @@ pair <LogicalOpPtr, double> SFWQuery :: optimizeQueryPlan (map <string, MyDB_Tab
 	MyDB_SchemaPtr totSchema = make_shared <MyDB_Schema> ();
 	map <string, MyDB_TablePtr> allTablesNeeded;
 	for (auto &a : tablesToProcess) {
-		allTablesNeeded[a.first] = allTables[a.first];
+		allTablesNeeded[a.second] = allTables[a.first];
 	}
 
 	for (const auto& pair : allTablesNeeded) {
-		string tableName = pair.first;
+		string alias = pair.first;
 		MyDB_TablePtr table = pair.second;
-		string alias = tableAliasMap[tableName];
 
 		for (auto b : table->getSchema ()->getAtts ()) {
 			bool needIt = false;
@@ -52,6 +51,12 @@ pair <LogicalOpPtr, double> SFWQuery :: optimizeQueryPlan (map <string, MyDB_Tab
 	// case where no joins
 	if (allTables.size () == 1) {
 		cout << "We've hit the base case" << endl;
+		cout << "total schema: " << totSchema << endl;
+
+		cout << "all disjunctions: " << endl;
+		for (auto a: allDisjunctions) {
+			cout << a->toString() << endl;
+		}
 
 		auto it = allTables.begin();
 		string tableName = it->first;
@@ -65,6 +70,9 @@ pair <LogicalOpPtr, double> SFWQuery :: optimizeQueryPlan (map <string, MyDB_Tab
 		MyDB_TablePtr outTable = make_shared <MyDB_Table> ("tempTable" + to_string(name), "tempTableLoc" + to_string(name), totSchema);
 		name++;
 		MyDB_StatsPtr stats = make_shared <MyDB_Stats> (aliasTable);
+		cout << "All stats all atts: " << endl;
+		stats->print();
+		cout << "Performing cost selection" << endl;
 		MyDB_StatsPtr scanStats = stats->costSelection(allDisjunctions);
 		
 		LogicalOpPtr myExp = make_shared <LogicalTableScan> (aliasTable, outTable, scanStats, allDisjunctions);
@@ -98,10 +106,12 @@ pair <LogicalOpPtr, double> SFWQuery :: optimizeQueryPlan (map <string, MyDB_Tab
 		for (int i = 0; i < n; ++i) {
 			if (mask & (1 << i)) {
 				// 1 goes to RIGHT group
+				cout << tableList[i].first << "going in right table" << endl;
 				rightTables[tableList[i].first] = tableList[i].second;
 			} else {
 				// 0 goes to LEFT group
 				leftTables[tableList[i].first] = tableList[i].second;
+				cout << tableList[i].first << "going in left table" << endl;
 			}
 		}
 
@@ -202,6 +212,17 @@ pair <LogicalOpPtr, double> SFWQuery :: optimizeQueryPlan (map <string, MyDB_Tab
 		cout << "right schema: " << leftSchema << "\n";
 
 		pair<LogicalOpPtr, double> leftPlan = optimizeQueryPlan (leftTables, leftSchema, leftCNF);
+		if (leftPlan.second > 9e99) {
+			cout << "BAD\n";
+			for (auto &a : leftTables) {
+				cout << a.first << " ";
+			}
+			for (auto &a : leftCNF) {
+				cout << a->toString () << " ";
+			}
+			cout << "\n";
+			exit (1);
+		}
 		pair<LogicalOpPtr, double> rightPlan = optimizeQueryPlan (rightTables, rightSchema, rightCNF);
 
 		MyDB_TablePtr outTable = make_shared <MyDB_Table> ("tempTable" + to_string(name), "tempTableLoc" + to_string(name), totSchema);
@@ -247,10 +268,6 @@ SFWQuery :: SFWQuery (struct ValueList *selectClause, struct FromList *fromClaus
         tablesToProcess = fromClause->aliases;
         allDisjunctions = cnf->disjunctions;
         groupingClauses = grouping->valuesToCompute;
-
-		for (pair <string, string> tableAlias : tablesToProcess) {
-			tableAliasMap[tableAlias.first] = tableAlias.second;
-		}
 }
 
 SFWQuery :: SFWQuery (struct ValueList *selectClause, struct FromList *fromClause,
@@ -258,20 +275,12 @@ SFWQuery :: SFWQuery (struct ValueList *selectClause, struct FromList *fromClaus
         valuesToSelect = selectClause->valuesToCompute;
         tablesToProcess = fromClause->aliases;
 		allDisjunctions = cnf->disjunctions;
-
-		for (pair <string, string> tableAlias : tablesToProcess) {
-			tableAliasMap[tableAlias.first] = tableAlias.second;
-		}
 }
 
 SFWQuery :: SFWQuery (struct ValueList *selectClause, struct FromList *fromClause) {
         valuesToSelect = selectClause->valuesToCompute;
         tablesToProcess = fromClause->aliases;
         allDisjunctions.push_back (make_shared <BoolLiteral> (true));
-
-		for (pair <string, string> tableAlias : tablesToProcess) {
-			tableAliasMap[tableAlias.first] = tableAlias.second;
-		}
 }
 
 #endif
