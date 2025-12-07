@@ -34,7 +34,7 @@ pair <LogicalOpPtr, double> SFWQuery :: optimizeQueryPlan (map <string, MyDB_Tab
 		}
 	}
 
-	cout << "total schema: " << totSchema << "\n";
+	// cout << "total schema: " << totSchema << "\n";
 	return optimizeQueryPlan (allTablesNeeded, totSchema, allDisjunctions);
 }
 
@@ -42,7 +42,7 @@ pair <LogicalOpPtr, double> SFWQuery :: optimizeQueryPlan (map <string, MyDB_Tab
 pair <LogicalOpPtr, double> SFWQuery :: optimizeQueryPlan (map <string, MyDB_TablePtr> &allTables, 
 	MyDB_SchemaPtr totSchema, vector <ExprTreePtr> &allDisjunctions) {
 
-	cout << "Inside recursive function, total number of tables: " << allTables.size() << endl;
+	// cout << "Inside recursive function, total number of tsables: " << allTables.size() << endl;
 
 	LogicalOpPtr res = nullptr;
 	double cost = 9e99;
@@ -50,17 +50,17 @@ pair <LogicalOpPtr, double> SFWQuery :: optimizeQueryPlan (map <string, MyDB_Tab
 
 	// case where no joins
 	if (allTables.size () == 1) {
-		cout << "We've hit the base case" << endl;
-		cout << "total schema: " << totSchema << endl;
+		// cout << "We've hit the base case" << endl;
+		// cout << "total schema: " << totSchema << endl;
 
-		cout << "all disjunctions: " << endl;
-		for (auto a: allDisjunctions) {
-			cout << a->toString() << endl;
-		}
+		// cout << "all disjunctions: " << endl;
+		// for (auto a: allDisjunctions) {
+		// 	cout << a->toString() << endl;
+		// }
 
 		auto it = allTables.begin();
 		string tableName = it->first;
-		cout << "tableName: " << tableName << endl;
+		// cout << "tableName: " << tableName << endl;
 
 		MyDB_TablePtr table = it->second;
 		MyDB_TablePtr aliasTable = table->alias(tableName);
@@ -69,18 +69,18 @@ pair <LogicalOpPtr, double> SFWQuery :: optimizeQueryPlan (map <string, MyDB_Tab
 		MyDB_TablePtr outTable = make_shared <MyDB_Table> ("tempTable" + to_string(name), "tempTableLoc" + to_string(name), totSchema);
 		name++;
 		MyDB_StatsPtr stats = make_shared <MyDB_Stats> (aliasTable);
-		cout << "All stats all atts: " << endl;
-		stats->print();
-		cout << "Performing cost selection" << endl;
+		// cout << "All stats all atts: " << endl;
+		// stats->print();
+		// cout << "Performing cost selection" << endl;
 		MyDB_StatsPtr scanStats = stats->costSelection(allDisjunctions);
 		
 		LogicalOpPtr myExp = make_shared <LogicalTableScan> (aliasTable, outTable, scanStats, allDisjunctions);
 		res = myExp;
 		double tupleCount = scanStats->getTupleCount();
-		cout << "tupleCount: " << tupleCount << endl;
+		// cout << "tupleCount: " << tupleCount << endl;
 		best = tupleCount;
 		
-		cout << "Best returned from base case: " << best << endl;
+		// cout << "Best returned from base case: " << best << endl;
 		return make_pair (res, best);
 	}
 
@@ -105,12 +105,12 @@ pair <LogicalOpPtr, double> SFWQuery :: optimizeQueryPlan (map <string, MyDB_Tab
 		for (int i = 0; i < n; ++i) {
 			if (mask & (1 << i)) {
 				// 1 goes to RIGHT group
-				cout << tableList[i].first << "going in right table" << endl;
+				// cout << tableList[i].first << "going in right table" << endl;
 				rightTables[tableList[i].first] = tableList[i].second;
 			} else {
 				// 0 goes to LEFT group
 				leftTables[tableList[i].first] = tableList[i].second;
-				cout << tableList[i].first << "going in left table" << endl;
+				// cout << tableList[i].first << "going in left table" << endl;
 			}
 		}
 
@@ -138,13 +138,13 @@ pair <LogicalOpPtr, double> SFWQuery :: optimizeQueryPlan (map <string, MyDB_Tab
 			}
 			
 			if (inLeft && inRight) {
-				cout << "top " << a->toString () << "\n";
+				// cout << "top " << a->toString () << "\n";
 				topCNF.push_back (a);
 			} else if (inLeft) {
-				cout << "left: " << a->toString () << "\n";
+				// cout << "left: " << a->toString () << "\n";
 				leftCNF.push_back (a);
 			} else {
-				cout << "right: " << a->toString () << "\n";
+				// cout << "right: " << a->toString () << "\n";
 				rightCNF.push_back (a);
 			}
 		}
@@ -178,7 +178,7 @@ pair <LogicalOpPtr, double> SFWQuery :: optimizeQueryPlan (map <string, MyDB_Tab
 			}
 		}
 
-		cout << "left schema: " << leftSchema << "\n";
+		// cout << "left schema: " << leftSchema << "\n";
 
 		for (pair <string, MyDB_TablePtr> rightTable : rightTables) {
 			string alias = rightTable.first;
@@ -206,7 +206,7 @@ pair <LogicalOpPtr, double> SFWQuery :: optimizeQueryPlan (map <string, MyDB_Tab
 			}
 		}
 
-		cout << "right schema: " << leftSchema << "\n";
+		// cout << "right schema: " << leftSchema << "\n";
 
 		pair<LogicalOpPtr, double> leftPlan = optimizeQueryPlan (leftTables, leftSchema, leftCNF);
 		pair<LogicalOpPtr, double> rightPlan = optimizeQueryPlan (rightTables, rightSchema, rightCNF);
