@@ -268,6 +268,8 @@ SFWQuery :: SFWQuery (struct ValueList *selectClause, struct FromList *fromClaus
         tablesToProcess = fromClause->aliases;
         allDisjunctions = cnf->disjunctions;
         groupingClauses = grouping->valuesToCompute;
+        indexMap = map <string, int> ();
+        memo = map <int, double> ();
 }
 
 SFWQuery :: SFWQuery (struct ValueList *selectClause, struct FromList *fromClause,
@@ -275,12 +277,30 @@ SFWQuery :: SFWQuery (struct ValueList *selectClause, struct FromList *fromClaus
         valuesToSelect = selectClause->valuesToCompute;
         tablesToProcess = fromClause->aliases;
 		allDisjunctions = cnf->disjunctions;
+        indexMap = map <string, int> ();
+        memo = map <int, double> ();
 }
 
 SFWQuery :: SFWQuery (struct ValueList *selectClause, struct FromList *fromClause) {
         valuesToSelect = selectClause->valuesToCompute;
         tablesToProcess = fromClause->aliases;
         allDisjunctions.push_back (make_shared <BoolLiteral> (true));
+        indexMap = map <string, int> ();
+        memo = map <int, double> ();
+}
+
+double SFWQuery :: getCostFromCache(map <string, MyDB_TablePtr> &allTablesNeeded) {
+    int idx = 0;
+    for (const auto& pair : allTablesNeeded) {
+        string alias = pair.first;
+        idx |= (1 << this->indexMap[alias]);
+    }
+
+    if (this->memo.find(idx) != this->memo.end()) {
+        return this->memo[idx];
+    } else {
+        return -1.0;
+    }
 }
 
 #endif

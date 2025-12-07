@@ -16,6 +16,8 @@ private:
 	vector <ExprTreePtr> allDisjunctions;
 	vector <ExprTreePtr> groupingClauses;
 	map <string, string> tableAliasMap;
+    map <string, int> indexMap;
+    map <int, double> memo;
 	int name;
 
 public:
@@ -41,6 +43,8 @@ public:
 	~SFWQuery () {}
 
 	void print ();
+
+    double getCostFromCache(map <string, MyDB_TablePtr> &allTables);
 
 	#include "FriendDecls.h"
 };
