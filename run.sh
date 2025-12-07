@@ -1,5 +1,5 @@
 #!/bin/bash
 clear
-cd /storage-home/t/tl107/comp432/A6/Build
+cd /storage-home/s/sb121/comp530/A7/Build/bin
 echo 11 | ~/scons/bin/scons-3.1.2
-bin/sqlUnitTest myCat .
+./sqlUnitTest myCat .

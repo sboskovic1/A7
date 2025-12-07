@@ -63,9 +63,8 @@ pair <LogicalOpPtr, double> SFWQuery :: optimizeQueryPlan (map <string, MyDB_Tab
 		cout << "tableName: " << tableName << endl;
 
 		MyDB_TablePtr table = it->second;
-		MyDB_TablePtr aliasTable = table->alias(tableAliasMap[tableName]);
+		MyDB_TablePtr aliasTable = table->alias(tableName);
 
-		cout << "Table alias " << tableAliasMap[tableName] << endl;
 
 		MyDB_TablePtr outTable = make_shared <MyDB_Table> ("tempTable" + to_string(name), "tempTableLoc" + to_string(name), totSchema);
 		name++;
@@ -124,8 +123,7 @@ pair <LogicalOpPtr, double> SFWQuery :: optimizeQueryPlan (map <string, MyDB_Tab
 		for (auto a: allDisjunctions) {
 			bool inLeft = false;
 			for (pair<string, MyDB_TablePtr> leftTable : leftTables) {
-				string alias = tableAliasMap[leftTable.first];
-				if (a->referencesTable(alias)) {
+				if (a->referencesTable(leftTable.first)) {
 					inLeft = true;
 					break;
 				}
@@ -133,8 +131,7 @@ pair <LogicalOpPtr, double> SFWQuery :: optimizeQueryPlan (map <string, MyDB_Tab
 
 			bool inRight= false;
 			for (pair<string, MyDB_TablePtr> rightTable : rightTables) {
-				string alias = tableAliasMap[rightTable.first];
-				if (a->referencesTable(alias)) {
+				if (a->referencesTable(rightTable.first)) {
 					inRight= true;
 					break;
 				}
@@ -156,7 +153,7 @@ pair <LogicalOpPtr, double> SFWQuery :: optimizeQueryPlan (map <string, MyDB_Tab
 		MyDB_SchemaPtr rightSchema = make_shared <MyDB_Schema> ();
 
 		for (pair <string, MyDB_TablePtr> leftTable : leftTables) {
-			string alias = tableAliasMap[leftTable.first];
+			string alias = leftTable.first;
 			for (auto b: leftTable.second->getSchema ()->getAtts ()) {
 				bool needIt = false;
 				for (auto a: totSchema->getAtts()) {
@@ -184,7 +181,7 @@ pair <LogicalOpPtr, double> SFWQuery :: optimizeQueryPlan (map <string, MyDB_Tab
 		cout << "left schema: " << leftSchema << "\n";
 
 		for (pair <string, MyDB_TablePtr> rightTable : rightTables) {
-			string alias = tableAliasMap[rightTable.first];
+			string alias = rightTable.first;
 			for (auto b: rightTable.second->getSchema ()->getAtts ()) {
 				bool needIt = false;
 				for (auto a: totSchema->getAtts()) {
@@ -212,17 +209,6 @@ pair <LogicalOpPtr, double> SFWQuery :: optimizeQueryPlan (map <string, MyDB_Tab
 		cout << "right schema: " << leftSchema << "\n";
 
 		pair<LogicalOpPtr, double> leftPlan = optimizeQueryPlan (leftTables, leftSchema, leftCNF);
-		if (leftPlan.second > 9e99) {
-			cout << "BAD\n";
-			for (auto &a : leftTables) {
-				cout << a.first << " ";
-			}
-			for (auto &a : leftCNF) {
-				cout << a->toString () << " ";
-			}
-			cout << "\n";
-			exit (1);
-		}
 		pair<LogicalOpPtr, double> rightPlan = optimizeQueryPlan (rightTables, rightSchema, rightCNF);
 
 		MyDB_TablePtr outTable = make_shared <MyDB_Table> ("tempTable" + to_string(name), "tempTableLoc" + to_string(name), totSchema);
@@ -268,8 +254,12 @@ SFWQuery :: SFWQuery (struct ValueList *selectClause, struct FromList *fromClaus
         tablesToProcess = fromClause->aliases;
         allDisjunctions = cnf->disjunctions;
         groupingClauses = grouping->valuesToCompute;
+<<<<<<< HEAD
         indexMap = map <string, int> ();
         memo = map <int, double> ();
+=======
+		name = 1;
+>>>>>>> 4fb7c1867332ac0e0710ed87f274e144baf7af9f
 }
 
 SFWQuery :: SFWQuery (struct ValueList *selectClause, struct FromList *fromClause,
@@ -277,14 +267,19 @@ SFWQuery :: SFWQuery (struct ValueList *selectClause, struct FromList *fromClaus
         valuesToSelect = selectClause->valuesToCompute;
         tablesToProcess = fromClause->aliases;
 		allDisjunctions = cnf->disjunctions;
+<<<<<<< HEAD
         indexMap = map <string, int> ();
         memo = map <int, double> ();
+=======
+		name = 1;
+>>>>>>> 4fb7c1867332ac0e0710ed87f274e144baf7af9f
 }
 
 SFWQuery :: SFWQuery (struct ValueList *selectClause, struct FromList *fromClause) {
         valuesToSelect = selectClause->valuesToCompute;
         tablesToProcess = fromClause->aliases;
         allDisjunctions.push_back (make_shared <BoolLiteral> (true));
+<<<<<<< HEAD
         indexMap = map <string, int> ();
         memo = map <int, double> ();
 }
@@ -301,6 +296,9 @@ double SFWQuery :: getCostFromCache(map <string, MyDB_TablePtr> &allTablesNeeded
     } else {
         return -1.0;
     }
+=======
+		name = 1;
+>>>>>>> 4fb7c1867332ac0e0710ed87f274e144baf7af9f
 }
 
 #endif

@@ -15,9 +15,12 @@ private:
 	vector <pair <string, string>> tablesToProcess;
 	vector <ExprTreePtr> allDisjunctions;
 	vector <ExprTreePtr> groupingClauses;
+<<<<<<< HEAD
 	map <string, string> tableAliasMap;
     map <string, int> indexMap;
     map <int, double> memo;
+=======
+>>>>>>> 4fb7c1867332ac0e0710ed87f274e144baf7af9f
 	int name;
 
 public:
