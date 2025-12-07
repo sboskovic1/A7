@@ -10,7 +10,12 @@ pair <LogicalOpPtr, double> SFWQuery :: optimizeQueryPlan (map <string, MyDB_Tab
 	// here we call the recursive, exhaustive enum. algorithm
 
 	MyDB_SchemaPtr totSchema = make_shared <MyDB_Schema> ();
-	for (const auto& pair : allTables) {
+	map <string, MyDB_TablePtr> allTablesNeeded;
+	for (auto &a : tablesToProcess) {
+		allTablesNeeded[a.first] = allTables[a.first];
+	}
+
+	for (const auto& pair : allTablesNeeded) {
 		string tableName = pair.first;
 		MyDB_TablePtr table = pair.second;
 		string alias = tableAliasMap[tableName];
@@ -31,12 +36,14 @@ pair <LogicalOpPtr, double> SFWQuery :: optimizeQueryPlan (map <string, MyDB_Tab
 	}
 
 	cout << "total schema: " << totSchema << "\n";
-	return optimizeQueryPlan (allTables, totSchema, allDisjunctions);
+	return optimizeQueryPlan (allTablesNeeded, totSchema, allDisjunctions);
 }
 
 // builds and optimizes a logical query plan for a SFW query, returning the logical query plan
 pair <LogicalOpPtr, double> SFWQuery :: optimizeQueryPlan (map <string, MyDB_TablePtr> &allTables, 
 	MyDB_SchemaPtr totSchema, vector <ExprTreePtr> &allDisjunctions) {
+
+	cout << "Inside recursive function, total number of tables: " << allTables.size() << endl;
 
 	LogicalOpPtr res = nullptr;
 	double cost = 9e99;
@@ -44,6 +51,8 @@ pair <LogicalOpPtr, double> SFWQuery :: optimizeQueryPlan (map <string, MyDB_Tab
 
 	// case where no joins
 	if (allTables.size () == 1) {
+		cout << "We've hit the base case" << endl;
+
 		auto it = allTables.begin();
 		string tableName = it->first;
 		MyDB_TablePtr table = it->second;
@@ -57,13 +66,21 @@ pair <LogicalOpPtr, double> SFWQuery :: optimizeQueryPlan (map <string, MyDB_Tab
 		LogicalOpPtr myExp = make_shared <LogicalTableScan> (aliasTable, outTable, scanStats, allDisjunctions);
 		res = myExp;
 		best = scanStats->getTupleCount();
-
+		
+		cout << "Best returned from base case: " << best << endl;
 		return make_pair (res, best);
 	}
 
 	// we have at least one join
 	vector<pair<string, MyDB_TablePtr>> tableList;
 	tableList.reserve(allTables.size());
+
+	for (const auto& pair : allTables) {
+		string tableName = pair.first;
+		MyDB_TablePtr table = pair.second;
+
+		tableList.push_back(make_pair(tableName, table));
+	}
 
 	int n = tableList.size();
 	for (int mask = 1; mask < (1 << (n - 1)); ++mask) {
