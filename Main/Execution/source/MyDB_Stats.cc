@@ -21,13 +21,11 @@ void MyDB_Stats :: print () {
 }
 
 double MyDB_Stats :: getAttVals (string forMe) {
-	cout << "looking for att " << forMe << endl;
 	for (auto a : allAtts) {
 		if (a.second == forMe)
 			return a.first;
 	}
 
-	cout << "didn't find att, returning 0 " << endl;
 	return 0;
 }
 
@@ -76,8 +74,7 @@ MyDB_StatsPtr MyDB_Stats :: costSelection (vector <ExprTreePtr> &allDisjunctions
 				ID = myActualExpr->getRHS ()->getId ();
 			}
 			temp->tupleCount = tupleCount / getAttVals (ID);
-	
-			cout << "getAttVals result: " << getAttVals (ID) << endl;
+
 			for (auto &b: allAtts) {
 				pair <double, string> newOne;
 				if (b.second == ID) {
