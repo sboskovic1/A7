@@ -17,8 +17,7 @@ pair <LogicalOpPtr, double> SFWQuery :: optimizeQueryPlan (map <string, MyDB_Tab
 
 	LogicalOpPtr res = nullptr;
 	double cost = 9e99;
-	double best = cost;
-	// some code here...
+	double best = std::numeric_limits<double>::infinity();
 
 	// case where no joins
 	if (allTables.size () == 1) {
@@ -28,7 +27,79 @@ pair <LogicalOpPtr, double> SFWQuery :: optimizeQueryPlan (map <string, MyDB_Tab
 	}
 
 	// we have at least one join
-	// some code here...
+	vector<pair<string, MyDB_TablePtr>> tableList;
+	vector<pair <string, string>> tableAliases;
+	tableList.reserve(allTables.size());
+	tableAliases.reserve(allTables.size());
+
+	for (pair <string, string> tableAlias : tablesToProcess) {
+		auto entry = allTables.find(tableAlias.first);
+		if (entry != allTables.end()) {
+			tableList.push_back(*entry);
+			tableAliases.push_back(tableAlias);
+		}
+	}
+
+	int n = tableList.size();
+	for (int mask = 1; mask < (1 << (n - 1)); ++mask) {
+		if (mask == 0 || mask == (1 << n) - 1) continue;
+
+		map<string, MyDB_TablePtr> leftTables;
+    	map<string, MyDB_TablePtr> rightTables;
+		vector<pair <string, string>> leftAliases;
+		vector<pair <string, string>> rightAliases;
+
+		for (int i = 0; i < n; ++i) {
+			if (mask & (1 << i)) {
+				// 1 goes to RIGHT group
+				rightTables[tableList[i].first] = tableList[i].second;
+				rightAliases.push_back(tableAliases[i]);
+			} else {
+				// 0 goes to LEFT group
+				leftTables[tableList[i].first] = tableList[i].second;
+				leftAliases.push_back(tableAliases[i]);
+			}
+		}
+
+		// find the various parts of the CNF
+		vector <ExprTreePtr> leftCNF; 
+		vector <ExprTreePtr> rightCNF; 
+		vector <ExprTreePtr> topCNF; 
+
+		// loop through all of the disjunctions and break them apart
+		for (auto a: allDisjunctions) {
+			bool inLeft = false;
+			for (pair<string, string> leftAlias : leftAliases) {
+				if (a->referencesTable(leftAlias.second)) {
+					inLeft = true;
+					break;
+				}
+			}
+
+			bool inRight= false;
+			for (pair<string, string> rightAlias : rightAliases) {
+				if (a->referencesTable(rightAlias.second)) {
+					inRight= true;
+					break;
+				}
+			}
+			
+			if (inLeft && inRight) {
+				cout << "top " << a->toString () << "\n";
+				topCNF.push_back (a);
+			} else if (inLeft) {
+				cout << "left: " << a->toString () << "\n";
+				leftCNF.push_back (a);
+			} else {
+				cout << "right: " << a->toString () << "\n";
+				rightCNF.push_back (a);
+			}
+		}
+
+		
+
+	}
+
 	return make_pair (res, best);
 }
 
