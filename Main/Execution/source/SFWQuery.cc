@@ -8,7 +8,30 @@
 pair <LogicalOpPtr, double> SFWQuery :: optimizeQueryPlan (map <string, MyDB_TablePtr> &allTables) {
 
 	// here we call the recursive, exhaustive enum. algorithm
-	// return optimizeQueryPlan (...);
+
+	MyDB_SchemaPtr totSchema = make_shared <MyDB_Schema> ();
+	for (const auto& pair : allTables) {
+		string tableName = pair.first;
+		MyDB_TablePtr table = pair.second;
+		string alias = tableAliasMap[tableName];
+
+		for (auto b : table->getSchema ()->getAtts ()) {
+			bool needIt = false;
+			for (auto a: valuesToSelect) {
+				if (a-> referencesAtt (alias, b.first)) {
+					needIt = true;
+					break;
+				}
+			}
+
+			if (needIt) {
+				totSchema->getAtts ().push_back (make_pair (alias + "_" + b.first, b.second));
+			}
+		}
+	}
+
+	cout << "total schema: " << totSchema << "\n";
+	return optimizeQueryPlan (allTables, totSchema, allDisjunctions);
 }
 
 // builds and optimizes a logical query plan for a SFW query, returning the logical query plan
@@ -21,23 +44,26 @@ pair <LogicalOpPtr, double> SFWQuery :: optimizeQueryPlan (map <string, MyDB_Tab
 
 	// case where no joins
 	if (allTables.size () == 1) {
+		auto it = allTables.begin();
+		string tableName = it->first;
+		MyDB_TablePtr table = it->second;
+		MyDB_TablePtr aliasTable = table->alias(tableAliasMap[tableName]);
 
-		// some code here...
+		MyDB_TablePtr outTable = make_shared <MyDB_Table> ("tempTable" + to_string(name), "tempTableLoc" + to_string(name), totSchema);
+		name++;
+		MyDB_StatsPtr stats = make_shared <MyDB_Stats> (aliasTable);
+		MyDB_StatsPtr scanStats = stats->costSelection(allDisjunctions);
+		
+		LogicalOpPtr myExp = make_shared <LogicalTableScan> (aliasTable, outTable, scanStats, allDisjunctions);
+		res = myExp;
+		best = scanStats->getTupleCount();
+
 		return make_pair (res, best);
 	}
 
 	// we have at least one join
 	vector<pair<string, MyDB_TablePtr>> tableList;
 	tableList.reserve(allTables.size());
-	map <string, string> tableAliasMap;
-
-	for (pair <string, string> tableAlias : tablesToProcess) {
-		auto entry = allTables.find(tableAlias.first);
-		if (entry != allTables.end()) {
-			tableList.push_back(*entry);
-			tableAliasMap[tableAlias.first] = tableAlias.second;
-		}
-	}
 
 	int n = tableList.size();
 	for (int mask = 1; mask < (1 << (n - 1)); ++mask) {
@@ -95,15 +121,13 @@ pair <LogicalOpPtr, double> SFWQuery :: optimizeQueryPlan (map <string, MyDB_Tab
 
 		MyDB_SchemaPtr leftSchema = make_shared <MyDB_Schema> ();
 		MyDB_SchemaPtr rightSchema = make_shared <MyDB_Schema> ();
-		// Not sure if we need combSchema
-		// MyDB_SchemaPtr combSchema = make_shared <MyDB_Schema> ();
 
 		for (pair <string, MyDB_TablePtr> leftTable : leftTables) {
 			string alias = tableAliasMap[leftTable.first];
 			for (auto b: leftTable.second->getSchema ()->getAtts ()) {
 				bool needIt = false;
-				for (auto a: valuesToSelect) {
-					if (a->referencesAtt (alias, b.first)) {
+				for (auto a: totSchema->getAtts()) {
+					if (alias + "_" + b.first == a.first) {
 						needIt = true;
 						break;
 					}
@@ -120,7 +144,6 @@ pair <LogicalOpPtr, double> SFWQuery :: optimizeQueryPlan (map <string, MyDB_Tab
 
 				if (needIt) {
 					leftSchema->getAtts ().push_back (make_pair (alias + "_" + b.first, b.second));
-					// combSchema->getAtts ().push_back (make_pair (alias+ "_" + b.first, b.second));
 				}
 			}
 		}
@@ -131,8 +154,8 @@ pair <LogicalOpPtr, double> SFWQuery :: optimizeQueryPlan (map <string, MyDB_Tab
 			string alias = tableAliasMap[rightTable.first];
 			for (auto b: rightTable.second->getSchema ()->getAtts ()) {
 				bool needIt = false;
-				for (auto a: valuesToSelect) {
-					if (a->referencesAtt (alias, b.first)) {
+				for (auto a: totSchema->getAtts()) {
+					if (alias + "_" + b.first == a.first) {
 						needIt = true;
 						break;
 					}
@@ -149,7 +172,6 @@ pair <LogicalOpPtr, double> SFWQuery :: optimizeQueryPlan (map <string, MyDB_Tab
 
 				if (needIt) {
 					rightSchema->getAtts ().push_back (make_pair (alias + "_" + b.first, b.second));
-					// combSchema->getAtts ().push_back (make_pair (alias+ "_" + b.first, b.second));
 				}
 			}
 		}
@@ -159,9 +181,9 @@ pair <LogicalOpPtr, double> SFWQuery :: optimizeQueryPlan (map <string, MyDB_Tab
 		pair<LogicalOpPtr, double> leftPlan = optimizeQueryPlan (leftTables, leftSchema, leftCNF);
 		pair<LogicalOpPtr, double> rightPlan = optimizeQueryPlan (rightTables, rightSchema, rightCNF);
 
-		// Not sure what to name the output table
-		MyDB_TablePtr outTable = make_shared <MyDB_Table> ("tempTable", "tempTableLoc", totSchema);
-		// Not sure if this is the stats to get
+		MyDB_TablePtr outTable = make_shared <MyDB_Table> ("tempTable" + to_string(name), "tempTableLoc" + to_string(name), totSchema);
+		name++;
+
 		MyDB_StatsPtr finalStats = leftPlan.first->getStats ()->costJoin (topCNF, rightPlan.first->getStats ());
 		LogicalOpPtr myExp = make_shared <LogicalJoin> (leftPlan.first, rightPlan.first, outTable, topCNF, finalStats);
 
@@ -202,19 +224,31 @@ SFWQuery :: SFWQuery (struct ValueList *selectClause, struct FromList *fromClaus
         tablesToProcess = fromClause->aliases;
         allDisjunctions = cnf->disjunctions;
         groupingClauses = grouping->valuesToCompute;
+
+		for (pair <string, string> tableAlias : tablesToProcess) {
+			tableAliasMap[tableAlias.first] = tableAlias.second;
+		}
 }
 
 SFWQuery :: SFWQuery (struct ValueList *selectClause, struct FromList *fromClause,
         struct CNF *cnf) {
         valuesToSelect = selectClause->valuesToCompute;
         tablesToProcess = fromClause->aliases;
-	allDisjunctions = cnf->disjunctions;
+		allDisjunctions = cnf->disjunctions;
+
+		for (pair <string, string> tableAlias : tablesToProcess) {
+			tableAliasMap[tableAlias.first] = tableAlias.second;
+		}
 }
 
 SFWQuery :: SFWQuery (struct ValueList *selectClause, struct FromList *fromClause) {
         valuesToSelect = selectClause->valuesToCompute;
         tablesToProcess = fromClause->aliases;
         allDisjunctions.push_back (make_shared <BoolLiteral> (true));
+
+		for (pair <string, string> tableAlias : tablesToProcess) {
+			tableAliasMap[tableAlias.first] = tableAlias.second;
+		}
 }
 
 #endif

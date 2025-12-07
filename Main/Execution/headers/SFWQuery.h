@@ -15,6 +15,8 @@ private:
 	vector <pair <string, string>> tablesToProcess;
 	vector <ExprTreePtr> allDisjunctions;
 	vector <ExprTreePtr> groupingClauses;
+	map <string, string> tableAliasMap;
+	int name;
 
 public:
 	SFWQuery () {}
