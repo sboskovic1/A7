@@ -11,7 +11,10 @@ pair <LogicalOpPtr, double> SFWQuery :: optimizeQueryPlan (map <string, MyDB_Tab
 
 	MyDB_SchemaPtr totSchema = make_shared <MyDB_Schema> ();
 	map <string, MyDB_TablePtr> allTablesNeeded;
+    int idx = 1;
 	for (auto &a : tablesToProcess) {
+        indexMap[a.second] = idx;
+        idx++;
 		allTablesNeeded[a.second] = allTables[a.first];
 	}
 
@@ -43,6 +46,12 @@ pair <LogicalOpPtr, double> SFWQuery :: optimizeQueryPlan (map <string, MyDB_Tab
 	MyDB_SchemaPtr totSchema, vector <ExprTreePtr> &allDisjunctions) {
 
 	cout << "Inside recursive function, total number of tables: " << allTables.size() << endl;
+
+    pair <LogicalOpPtr, double> cachedCost = getCostFromCache(allTables);
+    if (cachedCost.second != -1) {
+        cout << "Cache hit! Returning cost: " << cachedCost.second << endl;
+        return cachedCost;
+    }
 
 	LogicalOpPtr res = nullptr;
 	double cost = 9e99;
@@ -81,6 +90,7 @@ pair <LogicalOpPtr, double> SFWQuery :: optimizeQueryPlan (map <string, MyDB_Tab
 		best = tupleCount;
 		
 		cout << "Best returned from base case: " << best << endl;
+        addCostToCache(allTables, make_pair (res, best));
 		return make_pair (res, best);
 	}
 
@@ -225,6 +235,8 @@ pair <LogicalOpPtr, double> SFWQuery :: optimizeQueryPlan (map <string, MyDB_Tab
 		}
 	}
 
+    addCostToCache(allTables, make_pair (res, best));
+
 	return make_pair (res, best);
 }
 
@@ -255,7 +267,7 @@ SFWQuery :: SFWQuery (struct ValueList *selectClause, struct FromList *fromClaus
         allDisjunctions = cnf->disjunctions;
         groupingClauses = grouping->valuesToCompute;
         indexMap = map <string, int> ();
-        memo = map <int, double> ();
+        memo = map <int, pair <LogicalOpPtr, double>> ();
 }
 
 SFWQuery :: SFWQuery (struct ValueList *selectClause, struct FromList *fromClause,
@@ -264,7 +276,7 @@ SFWQuery :: SFWQuery (struct ValueList *selectClause, struct FromList *fromClaus
         tablesToProcess = fromClause->aliases;
 		allDisjunctions = cnf->disjunctions;
         indexMap = map <string, int> ();
-        memo = map <int, double> ();
+        memo = map <int, pair <LogicalOpPtr, double>> ();
 }
 
 SFWQuery :: SFWQuery (struct ValueList *selectClause, struct FromList *fromClause) {
@@ -272,10 +284,10 @@ SFWQuery :: SFWQuery (struct ValueList *selectClause, struct FromList *fromClaus
         tablesToProcess = fromClause->aliases;
         allDisjunctions.push_back (make_shared <BoolLiteral> (true));
         indexMap = map <string, int> ();
-        memo = map <int, double> ();
+        memo = map <int, pair <LogicalOpPtr, double>> ();
 }
 
-double SFWQuery :: getCostFromCache(map <string, MyDB_TablePtr> &allTablesNeeded) {
+ pair <LogicalOpPtr, double> SFWQuery :: getCostFromCache(map <string, MyDB_TablePtr> &allTablesNeeded) {
     int idx = 0;
     for (const auto& pair : allTablesNeeded) {
         string alias = pair.first;
@@ -285,8 +297,17 @@ double SFWQuery :: getCostFromCache(map <string, MyDB_TablePtr> &allTablesNeeded
     if (this->memo.find(idx) != this->memo.end()) {
         return this->memo[idx];
     } else {
-        return -1.0;
+        return make_pair(nullptr, -1.0);
     }
+}
+
+void SFWQuery :: addCostToCache(map <string, MyDB_TablePtr> &allTablesNeeded, pair <LogicalOpPtr, double> toCache) {
+    int idx = 0;
+    for (const auto& pair : allTablesNeeded) {
+        string alias = pair.first;
+        idx |= (1 << this->indexMap[alias]);
+    }
+    this->memo[idx] = toCache;
 }
 
 #endif

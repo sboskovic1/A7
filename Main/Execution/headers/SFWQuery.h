@@ -17,7 +17,7 @@ private:
 	vector <ExprTreePtr> groupingClauses;
 	map <string, string> tableAliasMap;
     map <string, int> indexMap;
-    map <int, double> memo;
+    map <int, pair <LogicalOpPtr, double>> memo;
 	int name;
 
 public:
@@ -44,7 +44,9 @@ public:
 
 	void print ();
 
-    double getCostFromCache(map <string, MyDB_TablePtr> &allTables);
+    pair <LogicalOpPtr, double> getCostFromCache(map <string, MyDB_TablePtr> &allTables);
+
+    void addCostToCache(map <string, MyDB_TablePtr> &allTables, pair <LogicalOpPtr, double> toCache);
 
 	#include "FriendDecls.h"
 };
