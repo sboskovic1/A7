@@ -69,18 +69,13 @@ pair <LogicalOpPtr, double> SFWQuery :: optimizeQueryPlan (map <string, MyDB_Tab
 		MyDB_TablePtr outTable = make_shared <MyDB_Table> ("tempTable" + to_string(name), "tempTableLoc" + to_string(name), totSchema);
 		name++;
 		MyDB_StatsPtr stats = make_shared <MyDB_Stats> (aliasTable);
-		cout << "All stats all atts: " << endl;
-		stats->print();
-		cout << "Performing cost selection" << endl;
 		MyDB_StatsPtr scanStats = stats->costSelection(allDisjunctions);
 		
 		LogicalOpPtr myExp = make_shared <LogicalTableScan> (aliasTable, outTable, scanStats, allDisjunctions);
 		res = myExp;
 		double tupleCount = scanStats->getTupleCount();
-		cout << "tupleCount: " << tupleCount << endl;
 		best = tupleCount;
 		
-		cout << "Best returned from base case: " << best << endl;
         addCostToCache(allTables, make_pair (res, best));
 		return make_pair (res, best);
 	}
